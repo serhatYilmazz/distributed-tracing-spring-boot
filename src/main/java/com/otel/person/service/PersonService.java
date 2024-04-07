@@ -25,7 +25,8 @@ public class PersonService {
 
     public List<Person> getPeople() {
         Span span = tracer.spanBuilder("PersonService:getPeope")
-                .setSpanKind(SpanKind.CONSUMER).startSpan();
+                .setSpanKind(SpanKind.INTERNAL)
+                .startSpan();
         Context.current().with(span);
         try (Scope scope = span.makeCurrent()) {
             return List.of(new Person("Serhat", "Yilmaz"));

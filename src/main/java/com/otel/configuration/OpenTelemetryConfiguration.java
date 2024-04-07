@@ -43,8 +43,17 @@ public class OpenTelemetryConfiguration {
         OtlpHttpSpanExporter otlpHttpSpanExporter = OtlpHttpSpanExporter.builder()
                 .setEndpoint("http://localhost:4318/v1/traces")
                 .build();
+
+        /*
+ docker run --rm --name my-prometheus \                                                                                          ──(Sun,Apr07)─┘
+    -v ./prometheus/prometheus.yml=/etc/prometheus/prometheus.yml \
+    -p 9090:9090 \
+    --network otel prom/prometheus --enable-feature=otlp-write-receiver --config.file=/etc/prometheus/prometheus.yml
+
+docker run -d --rm -p 3000:3000 --name grafana --network otel grafana/grafana-enterprise
+         */
         OtlpHttpMetricExporter otlpHttpMetricExporter = OtlpHttpMetricExporter.builder()
-                .setEndpoint("http://localhost:4318/v1/metrics")
+                .setEndpoint("http://localhost:9090/api/v1/otlp/v1/metrics")
                 .build();
         OtlpHttpLogRecordExporter otlpHttpLogRecordExporter = OtlpHttpLogRecordExporter.builder()
                 .setEndpoint("http://localhost:4318/v1/logs")

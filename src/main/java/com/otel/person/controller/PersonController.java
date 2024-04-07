@@ -35,6 +35,7 @@ public class PersonController {
     @GetMapping("")
     public List<Person> getPeople(@RequestParam String id, HttpServletRequest request, HttpServletResponseWrapper r) {
         Span span = tracer.spanBuilder("PersonController:getPeople").setSpanKind(SpanKind.CLIENT).startSpan();
+        span.addEvent("Init");
         span.setAttribute("http.method", "GET");
         span.setAttribute("http.url", "/person");
 

@@ -14,7 +14,10 @@ import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
+import io.opentelemetry.sdk.metrics.Aggregation;
+import io.opentelemetry.sdk.metrics.InstrumentSelector;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.metrics.View;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
@@ -24,6 +27,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.List;
+
 @Configuration
 public class OpenTelemetryConfiguration {
 
@@ -31,35 +36,33 @@ public class OpenTelemetryConfiguration {
     private String appName;
 
 
-    @Bean
+        @Bean
     public OpenTelemetry openTelemetry() {
         Resource resource = Resource.getDefault()
                 .toBuilder()
                 .put(ResourceAttributes.SERVICE_NAME, appName)
                 .put(ResourceAttributes.SERVICE_VERSION, "1.0.0")
+                .put(ResourceAttributes.K8S_POD_UID, "1234")
                 .build();
 
 
         OtlpHttpSpanExporter otlpHttpSpanExporter = OtlpHttpSpanExporter.builder()
-                .setEndpoint("http://localhost:4318/v1/traces")
+                .setEndpoint("http://localhost:4318")
                 .build();
 
         /*
- docker run --rm --name my-prometheus \                                                                                          ──(Sun,Apr07)─┘
-    -v ./prometheus/prometheus.yml=/etc/prometheus/prometheus.yml \
-    -p 9090:9090 \
-    --network otel prom/prometheus --enable-feature=otlp-write-receiver --config.file=/etc/prometheus/prometheus.yml
-
-docker run -d --rm -p 3000:3000 --name grafana --network otel grafana/grafana-enterprise
+            JAVA_TOOL_OPTIONS=-javaagent:/Users/serhatyilmaz/Workspace/otel/opentelemetry-javaagent.jar
+            OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+            OTEL_SERVICE_NAME=otel
          */
         OtlpHttpMetricExporter otlpHttpMetricExporter = OtlpHttpMetricExporter.builder()
-                .setEndpoint("http://localhost:9090/api/v1/otlp/v1/metrics")
+                .setEndpoint("http://localhost:4318/v1/metrics")
                 .build();
         OtlpHttpLogRecordExporter otlpHttpLogRecordExporter = OtlpHttpLogRecordExporter.builder()
                 .setEndpoint("http://localhost:4318/v1/logs")
                 .build();
         SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder()
-                .addSpanProcessor(SimpleSpanProcessor.create(otlpHttpSpanExporter))
+//                .addSpanProcessor(SimpleSpanProcessor.create(otlpHttpSpanExporter))
                 .addSpanProcessor(SimpleSpanProcessor.create(LoggingSpanExporter.create()))
                 .setResource(resource)
                 .build();
@@ -80,6 +83,16 @@ docker run -d --rm -p 3000:3000 --name grafana --network otel grafana/grafana-en
                 .setResource(resource)
                 .build();
 
+        SdkMeterProvider.builder()
+                .registerView(
+                        InstrumentSelector.builder()
+                                .setName("serhat-hist")
+                                .build(),
+                        View.builder()
+                                .setAggregation(Aggregation.explicitBucketHistogram(List.of(5.0, 10.0, 15.0, 20.0)))
+                                .build()
+                );
+
         OpenTelemetry openTelemetry = OpenTelemetrySdk.builder()
                 .setTracerProvider(sdkTracerProvider)
                 .setMeterProvider(sdkMeterProvider)
@@ -89,4 +102,5 @@ docker run -d --rm -p 3000:3000 --name grafana --network otel grafana/grafana-en
 
         return openTelemetry;
     }
+
 }

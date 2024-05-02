@@ -18,36 +18,14 @@ import java.util.List;
 @Slf4j
 public class PersonController {
 
-    private Tracer tracer;
-
-    private Meter meter;
-
-    private final OpenTelemetry openTelemetry;
-
     private final PersonService personService;
 
-    public PersonController(OpenTelemetry openTelemetry, PersonService personService) {
-        tracer = openTelemetry.getTracer(PersonController.class.getName(), "0.1.0");
-        meter = openTelemetry.meterBuilder(this.getClass().getName()).build();
-        this.openTelemetry = openTelemetry;
+    public PersonController(PersonService personService) {
         this.personService = personService;
     }
 
     @GetMapping("")
     public List<Person> getPeople(@RequestParam String id, HttpServletRequest request, HttpServletResponseWrapper r) {
-        meter.counterBuilder("person.getPeople")
-                .setDescription("Total number of getPeople")
-                .build()
-                .add(1);
-
-
-        DoubleHistogram histogram = openTelemetry.getMeter("serhat-hist")
-                .histogramBuilder("dice-kanka")
-                .setUnit("points")
-                .build();
-
-        histogram.record(Double.parseDouble(id));
-
         if (id.equals("1")) {
             throw new RuntimeException("id can not be 1");
         }

@@ -5,7 +5,9 @@ import com.otel.person.service.PersonService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpMethod;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
@@ -32,5 +34,15 @@ public class PersonController {
     @PostMapping("")
     public Person createPerson(@RequestBody Person person) {
         return personService.createPerson(person);
+    }
+
+    @GetMapping("/callOther/{id}")
+    public String callOther(@PathVariable Integer id)  {
+        RestTemplate restTemplate = new RestTemplate();
+        personService.getPeople();
+        if (id == 1) {
+            return "-1";
+        }
+        return restTemplate.getForEntity("http://app1:8080/person/callOther/1", String.class).getBody();
     }
 }
